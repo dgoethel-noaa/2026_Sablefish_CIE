@@ -1,0 +1,7 @@
+This folder contains all pertinent model runs and comparison graphics as used for the CIE review and described in the varios CIE documents.
+
+1Reg_Mods contains the final single region models, including the results of both the single change (1-off) and stepwise model building from Model 25.12_1Reg_Cont to Model 26.1_1Reg.
+
+FAA_Mods contains the final Fleets-as-Areas (FAA) models, including Model 26.2_FAA.
+
+Spat_Mods contains the final spatial models, including Model 26.3_5reg_Spat and Model 26.3a_3Reg_Spat.
