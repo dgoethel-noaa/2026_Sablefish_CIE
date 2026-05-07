@@ -1,0 +1,3 @@
+G3;Parameter: ln_global_R0 had absolute gradient = 2.70754152797699e-05 which was greater than tolerance 1e-05. This indicates potential non-convergence according to the tolerance.
+
+g

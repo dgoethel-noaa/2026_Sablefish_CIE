@@ -1,0 +1,4 @@
+G3;Parameter: ln_global_R0 had absolute gradient = 2.51539191106651e-05 which was greater than tolerance 1e-05. This indicates potential non-convergence according to the tolerance.
+
+gG3;Parameter pairs: ln_srv_q and ln_srv_q have a correlation of 0.957691843674329. This indicates potential non-convergence according to the tolerance.
+g
