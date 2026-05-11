@@ -1,2 +1,0 @@
-G3;Parameter pairs: ln_M and ln_M have a correlation of 0.957722517802656. This indicates potential non-convergence according to the tolerance.
-g

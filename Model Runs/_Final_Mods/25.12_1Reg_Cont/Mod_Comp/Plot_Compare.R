@@ -9,10 +9,10 @@ library(here)
 library(ggplot2)
 library(SPoRC)
 
-mod_name2 <- c("25.12_1Reg_Cont", "25_12_Drop_TS_Upd_M_2025")                         # names of model want to compare, these must match the names used for the SPoRC outputs results rdata files
+mod_name2 <- c("25.12_1Reg_Cont", "25_12_Drop_TS_Upd_M")                         # names of model want to compare, these must match the names used for the SPoRC outputs results rdata files
 comp_name <- "Cont"                                                       # name for saving files
 
-path <- here("Mods","_Base",mod_name2[1],"Mod_Comp")                   # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
+path <- here("Mods","_1Reg_Mod_Build",mod_name2[1],"Mod_Comp")                   # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
 
 do_high_res_plots <- 0
 
