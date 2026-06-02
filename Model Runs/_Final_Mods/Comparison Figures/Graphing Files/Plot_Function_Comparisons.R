@@ -12,11 +12,11 @@ library(gridExtra)
 library(ggsci)
 library(tidyverse)
 
-mod_name <- c(#"25.12_1Reg_Cont",
-  #"26.1_1Reg", 
+mod_name <- c("25.12_1Reg_Cont",
+  "26.1_1Reg", 
   #"26.2a_FAA_3Flt_LLS_Idx_Only",
-  "26.2_FAA",
-  "26.2a_FAA_Fsh+Srvy"
+  "26.2_FAA"
+  #"26.2a_FAA_Fsh+Srvy"
   #"26.2c_FAA_3Flt",
   #"26.2d_FAA_3Flt_LLS_Only_log2domeS",
   #"26.2e_FAA_3Flt_log2domeS",
@@ -25,10 +25,10 @@ mod_name <- c(#"25.12_1Reg_Cont",
   #"26.2h_FAA_3Flt_LLS_Only_2x_CV_LLS"
 )                         # names of model want to compare, these must match the names used for the SPoRC outputs results rdata files
 
-comp_name <- "FAA_Mods"                                                       # name for saving files
+comp_name <- "Bridge_Mods"                                                       # name for saving files
 root_folder <- "Mods"                                            # The root folder where runs will be stored (sub folders named with mod_name)
 
-ass_path <- here(root_folder,"___Final_Mods")                             # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
+ass_path <- here(root_folder,"___Final_Mods","Comparison Figures","Graphing Files")                             # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
 
 do_high_res_plots <- 1
 

@@ -1,3 +1,0 @@
-G3;Successfully passed post-optim-sanity checks
-
-g

@@ -8,15 +8,16 @@
 library(here)
 library(ggplot2)
 library(SPoRC)
+library(tidyverse)
 
 mod_name2 <- c(#"25.12_1Reg_Cont",
                #"26.1i_1Reg_Cont_Upd_No_wAI_LLS", 
                #"26.2a_FAA_3Flt_LLS_Idx_Only",
-               "26.2b_FAA_3Flt_LLS_Only",
+               "26.2_FAA",
                #"26.2c_FAA_3Flt",
                #"26.2d_FAA_3Flt_LLS_Only_log2domeS",
                #"26.2e_FAA_3Flt_log2domeS",
-               "26.2f_FAA_3Flt_No_Blks_F"
+               "26.2a_FAA_Fsh+Srvy"
                #"26.2g_FAA_3Flt_log2domeS_No_Blks_F"
                #"26.2h_FAA_3Flt_LLS_Only_2x_CV_LLS"
                )                         # names of model want to compare, these must match the names used for the SPoRC outputs results rdata files
@@ -24,7 +25,7 @@ mod_name2 <- c(#"25.12_1Reg_Cont",
 
 comp_name <- "Final_FAA_Mods"                                                       # name for saving files
 
-path <- here("Mods","___Final_Mods")                   # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
+path <- here("Mods","___Final_Mods", "Comparison Figures","Graphing Files")                   # Assumes that comparison folder is inside the first model folder, but can update this to be elsewhere
 
 do_high_res_plots <- 1
 
@@ -276,6 +277,7 @@ if(do_high_res_plots == 1){
   dev.off()
   tiff(filename=here(path,paste0(comp_name,"_WAA.png")),units = "in", width=12,height=8, res = 300)
   print(WAA_plot)
+  dev.off()
   tiff(filename=here(path,paste0(comp_name,"_Mat.png")),units = "in", width=12,height=8, res = 300)
   print(MAA_plot)
   dev.off()

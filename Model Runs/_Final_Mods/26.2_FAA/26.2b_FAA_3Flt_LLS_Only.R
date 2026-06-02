@@ -28,12 +28,13 @@ library(ggplot2)
 library(RTMB)
 library(tidyr)
 library(tidyverse)
+library(SparseNUTS)
 
 #############################################################################################################################################################################################################
 #---------USER INPUTS--NEED TO UPDATE
 
 mod_name <- '26.2b_FAA_3Flt_LLS_Only'                                                    # Model name to use for saving files and labels
-root_folder <- here("Mods","__FAA_mod_build")                                            # The root folder where runs will be stored (sub folders named with mod_name)
+root_folder <- here("Mods","___Final_Mods")                                            # The root folder where runs will be stored (sub folders named with mod_name)
 
 do_francis <- 1                                                                # whether or not to do francis reweighting for this run, ==0 NO, ==1 YES
 do_diags <- 1                                                                  # whether or not to do extra diagnostics (retrospective, jitter, profile likelihoods, etc) for this run; ==0 NO, ==1, YES
@@ -42,10 +43,11 @@ do_high_res_comps <- 1                                                         #
 do_OSA <- 1                                                                    # whether to do One Step Ahead (OSA) residual calcs and plots; Yes==1, NO==0
 do_pearson <- 1                                                                # whether to calculate and print out Pearson residual bubble plots ; Yes==1, No==0
 do_bias_ramp <- 0                                                              # whether to update the recruitment bias ramp parameters; NOTE: this is done after FRANCIS reweighting
+do_mcmc <- 1                                                                   # whether to do MCMC
 ##############################################################################################################################################################################################################
 
 # Load in assessment data
-SPoRC_one_reg <- readRDS(here(root_folder,mod_name,"SPoRC_FAA_3LLS_1LLF.rds"))
+SPoRC_one_reg <- readRDS(here(root_folder,'26.2_FAA',"SPoRC_FAA_3LLS_1LLF.rds"))
 
 # Make plotting directory
 dir.create(here(root_folder,mod_name,"plots"))
@@ -679,7 +681,7 @@ saveRDS(input_list, file = here(root_folder,mod_name, paste0(mod_name,"_input_li
 
 # Check convergence, will let you know if high correlation, large gradient, or high SE for any pars
 messages <- capture.output({
-  post_optim_sanity_checks(sabie_rtmb_model$sd_rep,sabie_rtmb_model$rep,gradient_tol = 0.00001,se_tol = 5,corr_tol = 0.95)
+  post_opt_sanity_checks(sabie_rtmb_model$sd_rep,sabie_rtmb_model$rep,gradient_tol = 0.00001,se_tol = 5,corr_tol = 0.95)
 }, type = "message")
 
 writeLines(messages,  here(root_folder,mod_name,"plots", paste0(mod_name,"_convergence.txt")))
@@ -801,6 +803,11 @@ data <- sabie_rtmb_model$data
 rep <- sabie_rtmb_model$rep
 sd_rep <- sabie_rtmb_model$sd_rep
 
+sd_summ <- summary(sd_rep)
+#colnames(sd_summ) <- c("Variable","Est.","SE")
+
+write.csv(sd_summ,file = here(root_folder,'26.2_FAA',paste0(mod_name,"_sd_rep.csv")))
+
 # Define dimensions
 years <- SPoRC_one_reg$yrs
 ages <- SPoRC_one_reg$ages
@@ -910,6 +917,10 @@ naa <- ggplot(naa_df, aes(x = Year, y = value, color = Sex)) +
 tiff(filename=here(root_folder,mod_name,"plots",paste0(mod_name,"_naa.png")),units = "in", width=14,height=12, res = 300)
 print(naa)
 dev.off()
+
+naa_tab <- naa_df %>% select(!Region) %>%
+  pivot_wider(names_from = Age, values_from = value, names_prefix = "Age-", names_expand = T)
+write.csv(naa_tab,file = here(root_folder,'26.2_FAA',paste0(mod_name,"_NAA.csv")))
 
 # Selex --------------------------------------------------------------
 
@@ -3298,3 +3309,459 @@ dev.off()
 
 save.image(file=here(root_folder,mod_name,paste0(mod_name,".RData")))        # Save all the data frames in case want to reload data without doing full data pulls
 
+
+# MCMC --------------------------------------------------------------------
+if(do_mcmc == 1) {
+  
+  # Read in model file first
+  mod <- readRDS(file = here(root_folder,'26.2_FAA', paste0(mod_name,"_model_results.RDS")))
+  
+  # turn off bias ramp
+  mod$data$do_rec_bias_ramp <- 0
+  
+  # fit model
+  tmp_mle_mod <- fit_model(mod$data, mod$parameters, mod$mapping, random = NULL, 3)
+  tmp_mle_mod$data <- mod$data
+  tmp_mle_mod$sd_rep <- RTMB::sdreport(tmp_mle_mod)
+  
+  # do MCMC
+  mcmc <- SparseNUTS::sample_snuts(
+    obj = mod, 
+    num_samples = 2e4, 
+    chains = 4, cores = 4, 
+    control = list(adapt_delta = 0.999), skip_optimization = TRUE
+  )
+  
+  # save MCMC
+  saveRDS(mcmc, here('Mods', '___Final_Mods', "26.2_FAA", paste(mod_name, "mcmc.RDS", sep = '_')))
+  
+  # plot mcmc
+  pdf(here('Mods', '___Final_Mods', "26.2_FAA", "plots", paste(mod_name, "mcmc.pdf", sep = '_')))
+  SparseNUTS::plot_marginals(mcmc, pars = c('ln_global_R0', 'ln_srv_q[1]',
+                                            'ln_srv_q[2]', 'ln_srv_q[3]',
+                                            'ln_srv_q[4]', 'ln_M[1]', 'ln_M[2]'))
+  pairs(mcmc, pars = c('ln_global_R0', 'ln_srv_q[1]','ln_srv_q[3]',
+                       'ln_srv_q[4]', 'ln_srv_q[2]', 'ln_M[1]', 'ln_M[2]'))
+  SparseNUTS::plot_uncertainties(mcmc)
+  dev.off()
+  
+}
+
+# Get MCMC table comparisons
+mcmc <- readRDS(here('Mods', '___Final_Mods', "26.2_FAA", paste(mod_name, "mcmc.RDS", sep = '_')))
+mcmc_post <- get_model_rep_from_mcmc(rtmb_obj = tmp_mle_mod,
+                                     adnuts_obj = mcmc, 
+                                     what = c('SSB', 'Rec', 'natmort', 'srv_q', 'Rec', 'Total_Biom'),
+                                     n_cores = 4)
+
+# Table of recruitment and SSB and Total biomass
+mcmc_comp_ts_table <- mcmc_post$SSB %>% 
+  group_by(Var2) %>% 
+  summarize(mcmc_med_ssb = median(value),
+            lwr_95_ssb = quantile(value, 0.025),
+            upr_95_ssb = quantile(value, 0.975)) %>% 
+  rename(year = Var2) %>% 
+  left_join(data.frame(year = 1:length(tmp_mle_mod$data$years), 
+                       mle_ssb = as.vector(tmp_mle_mod$rep$SSB)), by = 'year') %>% 
+  left_join(
+    mcmc_post$Rec %>% 
+      group_by(Var2) %>% 
+      summarize(mcmc_med_rec = median(value),
+                lwr_95_rec = quantile(value, 0.025),
+                upr_95_rec = quantile(value, 0.975)) %>% 
+      rename(year = Var2) %>% 
+      left_join(data.frame(year = 1:length(tmp_mle_mod$data$years), 
+                           mle_rec = as.vector(tmp_mle_mod$rep$Rec)), by = 'year'),
+    by = 'year'
+  ) %>% 
+  left_join(
+    mcmc_post$Total_Biom %>% 
+      group_by(Var2) %>% 
+      summarize(mcmc_med_totbiom = median(value),
+                lwr_95_totbiom = quantile(value, 0.025),
+                upr_95_totbiom = quantile(value, 0.975)) %>% 
+      rename(year = Var2) %>% 
+      left_join(data.frame(year = 1:length(tmp_mle_mod$data$years), 
+                           mle_totbiom = as.vector(tmp_mle_mod$rep$Total_Biom)), by = 'year'),
+    by = 'year'
+  )
+
+write.csv(mcmc_comp_ts_table, here(root_folder,mod_name, paste0(mod_name,"_mcmc_ts.csv")))
+
+pdf(here('Mods', '___Final_Mods', "26.2_FAA", "plots", paste(mod_name, "mcmc_ts.pdf", sep = '_')))
+
+sabie_rtmb_model <- readRDS(file = here(root_folder,'26.2_FAA', paste0(mod_name,"_model_results.RDS")))
+data <- sabie_rtmb_model$data
+
+# extract reference points
+spr_40 <- SPoRC::Get_Reference_Points(data = data,
+                                      rep = sabie_rtmb_model$rep,
+                                      SPR_x = 0.4,
+                                      t_spwn = 0,
+                                      sex_ratio_f = 0.5,
+                                      calc_rec_st_yr = 20,
+                                      rec_age = 2, type = "single_region",
+                                      what = "SPR")
+
+spr_35 <- SPoRC::Get_Reference_Points(data = data,
+                                      rep = sabie_rtmb_model$rep,
+                                      SPR_x = 0.35,
+                                      t_spwn = 0,
+                                      sex_ratio_f = 0.5,
+                                      calc_rec_st_yr = 20,
+                                      rec_age = 2, type = "single_region",
+                                      what = "SPR")
+
+f40 <- spr_40$f_ref_pt
+b40 <- spr_40$b_ref_pt
+f35 <- spr_35$f_ref_pt
+b35 <- spr_35$b_ref_pt
+
+
+ggplot() +
+  geom_ribbon(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_ssb, ymin = lwr_95_ssb, ymax = upr_95_ssb), alpha = 0.3) +
+  geom_line(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_ssb)) +
+  geom_hline(yintercept = b40, lty = 2) +
+  annotate('text', x = 1965, y = b40 + 10, label = 'B40%', size = 10) +
+  geom_hline(yintercept = b35) +
+  annotate('text', x = 1965, y = b35 - 10, label = 'B35%', size = 10) +
+  scale_color_manual(values = c("MCMC Median" = "black", "MLE" = "red")) +
+  labs(x = "Year", y = "SSB (kt)", color = 'Type', linetype = 'Type') +
+  theme_bw(base_size = 15) +
+  coord_cartesian(ylim = c(0, NA))
+
+ggplot() +
+  geom_ribbon(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_totbiom, ymin = lwr_95_totbiom, ymax = upr_95_totbiom), alpha = 0.3) +
+  geom_line(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_totbiom)) +
+  scale_linetype_manual(values = c("MCMC Median" = "solid", "MLE" = "dashed")) +
+  labs(x = "Year", y = "Total Biomass (kt)", color = 'Type', linetype = 'Type') +
+  theme_bw(base_size = 15) +
+  coord_cartesian(ylim = c(0, NA))
+
+ggplot() +
+  geom_ribbon(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_rec, ymin = lwr_95_rec, ymax = upr_95_rec), alpha = 0.3) +
+  geom_line(mcmc_comp_ts_table, mapping = aes(x = year + 1959, y = mcmc_med_rec)) +
+  scale_linetype_manual(values = c("MCMC Median" = "solid", "MLE" = "dashed")) +
+  labs(x = "Year", y = "Age-2 Recruitment (millions of individuals)", color = 'Type', linetype = 'Type') +
+  theme_bw(base_size = 15) +
+  coord_cartesian(ylim = c(0, NA))
+dev.off()
+
+# Table of parameters
+mcmc_comp_par_table <- mcmc$monitor %>% 
+  filter(str_detect(variable, 'R0|srv_q|M')) %>% 
+  left_join(
+    data.frame(
+      variable = c('ln_global_R0', 'ln_M[1]', 'ln_M[2]', 'ln_srv_q[1]', 'ln_srv_q[2]','ln_srv_q[3]','ln_srv_q[4]'),
+      mle_mean = tmp_mle_mod$sd_rep$par.fixed[names(tmp_mle_mod$sd_rep$par.fixed) %in% c("ln_global_R0", 'ln_srv_q', 'ln_M')],
+      mle_sd = sqrt(diag(tmp_mle_mod$sd_rep$cov.fixed))[names(tmp_mle_mod$sd_rep$par.fixed) %in% c("ln_global_R0", 'ln_srv_q', 'ln_M')]
+    ),
+    by = 'variable'
+  )
+
+write.csv(mcmc_comp_par_table, here(root_folder,'26.2_FAA', paste0(mod_name,"_mcmc_par.csv")))
+
+
+# Full Projection ---------------------------------------------------------
+sabie_rtmb_model <- readRDS(file = here(root_folder,'26.2_FAA', paste0(mod_name,"_model_results.RDS")))
+data <- sabie_rtmb_model$data
+
+# Define HCR to use for projections
+HCR_function <- function(x, frp, brp, alpha = 0.05) {
+  stock_status <- x / brp # define stock status
+  # If stock status is > 1
+  if(stock_status >= 1) f <- frp
+  # If stock status is between brp and alpha
+  if(stock_status > alpha && stock_status < 1) f <- frp * (stock_status - alpha) / (1 - alpha)
+  # If stock status is less than alpha
+  if(stock_status < alpha) f <- 0
+  return(f)
+}
+
+# define projection parameters
+n_sims <- 1e3
+t_spawn <- 0
+n_proj_yrs <- 14
+n_regions <- 1
+n_ages <- length(data$ages)
+n_sexes <- 2
+n_fish_fleets <- 2
+n_sexes <- 2
+do_recruits_move <- 0
+terminal_NAA <- array(sabie_rtmb_model$rep$NAA[,length(data$years),,], dim = c(n_regions, n_ages, n_sexes))
+terminal_NAA0 <- array(sabie_rtmb_model$rep$NAA0[,length(data$years),,], dim = c(n_regions, n_ages, n_sexes))
+WAA <- array(rep(data$WAA[,length(data$years),,], each = n_proj_yrs), dim = c(n_regions, n_proj_yrs, n_ages, n_sexes)) # weight at age
+WAA_fish <- array(rep(data$WAA[,length(data$years),,], each = n_proj_yrs), dim = c(n_regions, n_proj_yrs, n_ages, n_sexes, n_fish_fleets)) # weight at age for fishery
+MatAA <- array(rep(data$MatAA[,length(data$years),,], each = n_proj_yrs), dim = c(n_regions, n_proj_yrs, n_ages, n_sexes)) # maturity at age
+fish_sel <- array(rep(sabie_rtmb_model$rep$fish_sel[,length(data$years),,,], each = n_proj_yrs), dim = c(n_regions, n_proj_yrs, n_ages, n_sexes, n_fish_fleets)) # selectivity
+Movement <- array(rep(sabie_rtmb_model$rep$Movement[,,length(data$years),,], each = n_proj_yrs), dim = c(n_regions, n_regions, n_proj_yrs, n_ages, n_sexes)) # movement - not used
+terminal_F <- array(sabie_rtmb_model$rep$Fmort[,length(data$years),], dim = c(n_regions, n_fish_fleets)) # terminal F
+natmort <- array(rep(sabie_rtmb_model$rep$natmort[,length(data$years),,], each = n_proj_yrs), dim = c(n_regions, n_proj_yrs, n_ages, n_sexes)) # natural mortaility
+recruitment <- array(sabie_rtmb_model$rep$Rec[,20:(length(data$years) - 2)], dim = c(n_regions, length(20:(length(data$years) - 2)))) # recruitment from years 3 - terminal (corresponds to 1979)
+sexratio <- array(0.5, dim = c(n_regions, n_proj_yrs, n_sexes)) # recruitment sex ratio 
+
+# extract reference points
+spr_40 <- SPoRC::Get_Reference_Points(data = data,
+                                      rep = sabie_rtmb_model$rep,
+                                      SPR_x = 0.4,
+                                      t_spwn = 0,
+                                      sex_ratio_f = 0.5,
+                                      calc_rec_st_yr = 20,
+                                      rec_age = 2, type = "single_region",
+                                      what = "SPR")
+
+spr_35 <- SPoRC::Get_Reference_Points(data = data,
+                                      rep = sabie_rtmb_model$rep,
+                                      SPR_x = 0.35,
+                                      t_spwn = 0,
+                                      sex_ratio_f = 0.5,
+                                      calc_rec_st_yr = 20,
+                                      rec_age = 2, type = "single_region",
+                                      what = "SPR")
+
+f40 <- spr_40$f_ref_pt
+b40 <- spr_40$b_ref_pt
+f35 <- spr_35$f_ref_pt
+b35 <- spr_35$b_ref_pt
+r_ave <- mean(recruitment)   # mean recruitment used for BRPs
+
+# Define the F used for each scenario (Based on BSAI Intro Report - Alaska Scenarios)
+proj_inputs <- list(
+  # Scenario 1 - Using HCR to adjust maxFABC
+  list(f_ref_pt = array(f40, dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = array(b40, dim = c(n_regions, n_proj_yrs)),
+       fmort_opt = 'HCR'
+  ),
+  # Scenario 2 - Using HCR to adjust author specified catches (~49% of F40%)
+  list(f_ref_pt = array(f40 * 0.49, dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = array(b40, dim = c(n_regions, n_proj_yrs)),
+       fmort_opt = 'HCR'
+  ),
+  # Scenario 3 - Using 1/2 of max F
+  list(f_ref_pt = array(max(rowSums(sabie_rtmb_model$rep$Fmort[1,,])) * 0.5, dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = NULL,
+       fmort_opt = 'Input'
+  ),
+  # Scenario 4 - Using an F input of last 5 years average
+  list(f_ref_pt = array(mean(rowSums(sabie_rtmb_model$rep$Fmort[,(length(data$years) - 5):(length(data$years) - 1),])), dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = NULL,
+       fmort_opt = 'Input'
+  ),
+  # Scenario 5 - F is set at 0
+  list(f_ref_pt = array(0, dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = NULL,
+       fmort_opt = 'Input'
+  ),
+  # Scenario 6 - Using HCR to adjust FOFL
+  list(f_ref_pt = array(f35, dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = array(b35, dim = c(n_regions, n_proj_yrs)),
+       fmort_opt = 'HCR'
+  ),
+  # Scenario 7 - Using HCR to adjust FABC in first 2 projection years, and then later years are adjusting FOFL
+  list(f_ref_pt = array(c(rep(f40, 2), rep(f35, n_proj_yrs - 2)), dim = c(n_regions, n_proj_yrs)),
+       b_ref_pt = array(c(rep(b40, 2), rep(b35, n_proj_yrs - 2)), dim = c(n_regions, n_proj_yrs)),
+       fmort_opt = 'HCR'
+  )
+)
+
+# store outputs
+all_scenarios_f <- array(0, dim = c(n_regions, n_proj_yrs, n_sims, length(proj_inputs)))
+all_scenarios_ssb <- array(0, dim = c(n_regions, n_proj_yrs, n_sims, length(proj_inputs)))
+all_scenarios_bio <- array(0, dim = c(n_regions, n_proj_yrs, n_sims, length(proj_inputs)))
+
+all_scenarios_catch <- array(0, dim = c(n_regions, n_proj_yrs, n_fish_fleets, n_sims, length(proj_inputs)))
+
+# do population projection
+set.seed(123)
+for (i in seq_along(proj_inputs)) {
+  for (sim in 1:n_sims) {
+    
+    # do population projection
+    out <- SPoRC::Do_Population_Projection(n_proj_yrs = n_proj_yrs,
+                                           n_regions = n_regions,
+                                           n_ages = n_ages,
+                                           n_sexes = n_sexes,
+                                           sexratio = sexratio,
+                                           n_fish_fleets = n_fish_fleets,
+                                           do_recruits_move = do_recruits_move,
+                                           recruitment = recruitment,
+                                           terminal_NAA = terminal_NAA,
+                                           terminal_NAA0 = terminal_NAA0,
+                                           terminal_F = terminal_F,
+                                           natmort = natmort,
+                                           WAA = WAA,
+                                           WAA_fish = WAA_fish,
+                                           MatAA = MatAA,
+                                           fish_sel = fish_sel,
+                                           Movement = Movement,
+                                           f_ref_pt = proj_inputs[[i]]$f_ref_pt,
+                                           b_ref_pt = proj_inputs[[i]]$b_ref_pt,
+                                           HCR_function = HCR_function,
+                                           recruitment_opt = "inv_gauss",
+                                           fmort_opt = proj_inputs[[i]]$fmort_opt,
+                                           t_spawn = t_spawn
+    )
+    
+    all_scenarios_ssb[,,sim,i] <- out$proj_SSB
+    for(y in 1:n_proj_yrs){
+      all_scenarios_bio[,y,sim,i] <- sum(out$proj_NAA[,y,,] * SPoRC_one_reg$WAA[,SPoRC_one_reg$nyrs,,])
+    }
+    all_scenarios_catch[,,,sim,i] <- out$proj_Catch
+    all_scenarios_f[,,sim,i] <- out$proj_F[,-(n_proj_yrs+1)] # remove last year, since it's not used
+  } # end sim loop
+  print(i)
+} # end i loop
+
+# Projection table
+proj_table <- rbind(
+  c("Spawning biomass (t)", rep("", length(proj_inputs) - 1)),
+  round(apply(all_scenarios_ssb, c(2, 4), mean), 3),
+  c("Fishing mortality", rep("", length(proj_inputs) - 1)),
+  round(apply(all_scenarios_f, c(2, 4), mean), 3),
+  c("Yield (t)", rep("", length(proj_inputs) - 1)),
+  round(apply(apply(all_scenarios_catch, c(2, 4, 5), sum), c(1, 3), mean), 3)
+)
+proj_table2 <- rbind(
+  c("Spawning biomass (t)", rep("", length(proj_inputs) - 1)),
+  round(apply(all_scenarios_ssb, c(2, 4), mean), 3),
+  c("Biomass (t)", rep("", length(proj_inputs) - 1)),
+  round(apply(all_scenarios_bio, c(2, 4), mean), 3),
+  c("Fishing mortality", rep("", length(proj_inputs) - 1)),
+  round(apply(all_scenarios_f, c(2, 4), mean), 3),
+  c("Yield (t)", rep("", length(proj_inputs) - 1)),
+  round(apply(apply(all_scenarios_catch, c(2, 4, 5), sum), c(1, 3), mean), 3)
+)
+
+
+proj_yrs <- (max(data$years) + 1959) + 0:(n_proj_yrs - 1)
+rownames(proj_table) <- c("", proj_yrs, "", proj_yrs, "", proj_yrs)
+colnames(proj_table) <- c("Maximum Permissible F", "Author's F (Specified Catches)",
+                          "Half maximum F", "5-year Average F", "No Fishing",
+                          "Overfished", "Approaching Overfished")
+
+rownames(proj_table2) <- c("", proj_yrs, "", proj_yrs, "", proj_yrs)
+colnames(proj_table2) <- c("Maximum Permissible F", "Author's F (Specified Catches)",
+                           "Half maximum F", "5-year Average F", "No Fishing",
+                           "Overfished", "Approaching Overfished")
+
+write.csv(proj_table, here(root_folder,'26.2_FAA', paste0(mod_name,"_proj_table.csv")))
+write.csv(proj_table2, here(root_folder,'26.2_FAA', paste0(mod_name,"_proj_table2.csv")))
+
+# do population projection to get projected biomass for specified catch scenario (this was quick n dirty for CIE, should integrate above in full projection)
+out3 <- SPoRC::Do_Population_Projection(n_proj_yrs = n_proj_yrs,
+                                        n_regions = n_regions,
+                                        n_ages = n_ages,
+                                        n_sexes = n_sexes,
+                                        sexratio = sexratio,
+                                        n_fish_fleets = n_fish_fleets,
+                                        do_recruits_move = do_recruits_move,
+                                        recruitment = recruitment,
+                                        terminal_NAA = terminal_NAA,
+                                        terminal_NAA0 = terminal_NAA0,
+                                        terminal_F = terminal_F,
+                                        natmort = natmort,
+                                        WAA = WAA,
+                                        WAA_fish = WAA_fish,
+                                        MatAA = MatAA,
+                                        fish_sel = fish_sel,
+                                        Movement = Movement,
+                                        f_ref_pt = array(f40 * 0.49, dim = c(n_regions, n_proj_yrs)),
+                                        b_ref_pt = array(b40, dim = c(n_regions, n_proj_yrs)),
+                                        HCR_function = HCR_function,
+                                        recruitment_opt = "inv_gauss",
+                                        fmort_opt = "HCR",
+                                        t_spawn = t_spawn
+)
+
+
+all_scenarios_bio2 <- array(0, dim = n_proj_yrs)
+for(i in 1:n_proj_yrs){
+  all_scenarios_bio2[i] <- sum(out3$proj_NAA[,i,,] * SPoRC_one_reg$WAA[,SPoRC_one_reg$nyrs,,])
+}
+write.csv(all_scenarios_bio2, here(root_folder,'26.2_FAA', paste0(mod_name,"_proj_table_bio.csv")))
+
+# Phase Plane -------------------------------------------------------------
+
+# Phase Plane -------------------------------------------------------------
+sabie_rtmb_model <- readRDS(file = here(root_folder,'26.1', paste0(mod_name,"_model_results.RDS")))
+
+# extract quantities
+years <- data$years + 1959 
+ssb <- colSums(sabie_rtmb_model$rep$SSB) 
+fmort <- apply(sabie_rtmb_model$rep$Fmort, 2, sum) 
+
+# Normalize
+ssb_b35 <- ssb / b35
+f_f35   <- fmort / f35
+b40_b35 <- b40 / b35  # inflection point of ABC HCR on x-axis
+hcr_x <- seq(0, max(ssb_b35) * 1.05, length.out = 500)
+
+# build hcr
+hcr_abc <- case_when(
+  hcr_x >= b40_b35 ~ f40 / f35,
+  hcr_x > 0.05 & hcr_x < b40_b35 ~ (f40 / f35) * (hcr_x - 0.05) / (b40_b35 - 0.05),
+  TRUE ~ 0
+)
+hcr_ofl <- case_when(
+  hcr_x >= 1 ~ 1.0,
+  hcr_x > 0.05 & hcr_x < 1  ~ (hcr_x - 0.05) / (1 - 0.05),
+  TRUE  ~ 0
+)
+hcr_df <- data.frame(x = hcr_x, abc = hcr_abc, ofl = hcr_ofl)
+traj_df <- data.frame(
+  year  = years,
+  ssb   = ssb_b35,
+  f     = f_f35
+)
+
+pdf(here('Mods', '___Final_Mods', "26.2_FAA", "plots", paste(mod_name, "phase_plane.pdf", sep = '_')))
+ggplot() +
+  geom_line(data = hcr_df, aes(x = x, y = ofl), color = "#e05c5c", linewidth = 1.1) +
+  geom_line(data = hcr_df, aes(x = x, y = abc), color = "#36b5b0", linewidth = 1.1) +
+  geom_vline(xintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "grey40") +
+  geom_path(data = traj_df, aes(x = ssb, y = f), linewidth = 0.5) +
+  geom_point(data = traj_df, aes(x = ssb, y = f), size = 2) +
+  geom_text(data = traj_df |> filter(year %% 5 == 0 | year == max(year)),
+            aes(x = ssb, y = f, label = year),
+            size = 2.8, hjust = -0.15, fontface = "italic") +
+  geom_text(data = traj_df |> filter(year == max(year)),
+            aes(x = ssb, y = f, label = year),
+            size = 3.2, fontface = "bold", hjust = -0.15) +
+  labs(
+    x     = expression(SSB/B[35*"%"]),
+    y     = expression(F/F[35*"%"])
+  ) +
+  theme_bw(base_size = 12) +
+  theme(panel.grid.minor = element_blank())
+
+dev.off()
+
+
+
+# SSB ~ Rec ---------------------------------------------------------------
+sabie_rtmb_model <- readRDS(file = here(root_folder,'26.2_FAA', paste0(mod_name,"_model_results.RDS")))
+rec_ssb_df <- data.frame(
+  year = sabie_rtmb_model$data$years,
+  ssb = as.vector(sabie_rtmb_model$rep$SSB),
+  rec = dplyr::lead(as.vector(sabie_rtmb_model$rep$Rec), 2)
+)
+
+
+pdf(here('Mods', '___Final_Mods', "26.2_FAA", "plots", paste(mod_name, "ssb_rec.pdf", sep = '_')))
+ggplot(rec_ssb_df, aes(x = ssb, y = rec, label = year + 1959)) +
+  geom_text(color = 'blue') +
+  labs(x = 'SSB (kt)', y = 'Age-2 Recruits (millions of individuals)') +
+  theme_bw(base_size = 15) +
+  coord_cartesian(xlim = c(0,NA))
+dev.off()
+
+
+# Summary of Parameters ---------------------------------------------------
+sabie_rtmb_model <- readRDS(file = here(root_folder,'26.2_FAA', paste0(mod_name,"_model_results.RDS")))
+est_pars <- data.frame(name = names(sabie_rtmb_model$sd_rep$par.fixed), 
+                       pars = sabie_rtmb_model$sd_rep$par.fixed) %>% 
+  group_by(name) %>% 
+  count() %>% 
+  rename(n_pars = n)
+write.csv(est_pars, here(root_folder,'26.2_FAA', paste0(mod_name,"_par_count_table.csv")))
