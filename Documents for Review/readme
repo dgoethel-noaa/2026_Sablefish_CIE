@@ -1,22 +1,26 @@
-The document list is separated into ‘summary/background’ and ‘for review’ documents. The CIE reviewers are encouraged to peruse the ‘summary/background’ documents for information on data inputs, previous assessment structures and associated reviews, and ongoing research. However, the CIE reviewers must review all of the ‘for review’ documents in preparation for the peer review, as these contain the results of the primary analyses and model runs that will be discussed during the review panel.
+This folder contains the documents for review by the CIE review body. A new draft Stock Assessment and Fishery Evaluation (SAFE) report was created, which is the primary document for review. The SAFE summarizes input data, model structure, and outputs for two sablefish assessment models: Model 26.1_1Reg (a single region panmictic assessment) and Model 26.2_FAA (a spatially implicit fleets-as-areas assessment that disaggregates the NOAA Longline Survey into regional fleets – Bering Sea, Aleutian Islands, and Gulf of Alaska – to deal with recent extensive survey design changes). The main goal of the review is to provide recommendations on which model structure provides the best scientific basis for developing operational management advice for sablefish in 2026 and beyond. The CIE review meeting will be structured around comparing and contrasting performance of these two model structures.
 
-Available documents (available from the public sablefish CIE GitHub repository, as they become available) include:
+Five appendices were developed that summarize different aspects of model building, which should provide additional context for understanding the two models presented in the main SAFE document. These include a summary of the SPoRC assessment framework and model structure (Appendix 3A), single region model changes since 2025 (Appendix 3B), fleets-as-areas (FAA) model development (Appendix 3C), summary of spatial models (3D), and a summary of a spatially explicit closed loop simulation that was used to inform model structure decisions (Appendix 3E). All of the appendices are meant as sources of additional information for understanding the decisions regarding model structure in the main SAFE document. 
 
-For Review 
+Additional sablefish background documents, which may be of interest but are not part of the review requirements, have been uploaded to the 'Sablefish Background Documents' folder. Within the background documents, the assessment documents folder will be of particular value for understanding previous modeling decisions (in particular Goethel and Cheng, 2025, describing changes to the model implemented in 2025). 
 
-1.	A summary document describing the fleets-as-areas assessment model, including the full model description and results, with comparison to outputs from the single region panmictic assessment as well as summary results for all sensitivity model runs;
-2.	A document summarizing the results of the spatially explicit closed loop simulation analysis;
-3.	The 2025 Alaskan sablefish stock assessment proposed model changes report (Goethel and Cheng, 2025) produced for the September 2025 Joint Plan Team meeting, presentation, and GitHub repository, which describes recent changes to the current single region panmictic assessment including transition to RTMB and the SPoRC assessment package;
-4.	The spatial sablefish model publication and model updates (Cheng et al., 2025a) for the September 2025 Joint Plan Team meeting;
-5.	Additional supporting documents and presentations as they become available.
+The data and model files (R files) used to run the assessment in SPoRC as well as model outputs are available in the 'Model Runs' folder. 
 
-Summary/Background
+The final documents for review by the CIE include:
 
-1.	The 2024 Alaskan sablefish Stock Assessment and Fishery Evaluation (SAFE) report (Goethel and Cheng, 2024) and presentation; 
-2.	The 2024 December SSC (p. 14-16) and November Joint Plan Team (p. 2-3) reports;
-3.	The 2025 AFSC Longline Survey Cruise Report (Siwicke et al., 2026) and presentation;
-4.	The 2025 October SSC (pp. 21-23) and September Joint Plan Team (p. 5-6) reports;
-5.	The SPoRC assessment platform publication (Cheng et al., 2026) and GitHub documentation;
-6.	Research papers on integrating density-dependent growth (Cheng et al., 2025b) and a pot gear fleet (Cheng et al., 2024a) into the sablefish assessment, simulation studies on selectivity (Cheng et al., 2024b) and sex-specific parametrization (Cheng et al., 2025c) for the sablefish assessment, and considerations for fitting sex-specific composition data (Cheng et al., 2025d) in stock assessments;
-7.	CIE reviewer reports from the 2016 Alaskan sablefish CIE review. 
+Documents For Review (these documents are also available to the CIE reviewers from the associated google drive, https://drive.google.com/drive/folders/1LB7eJd90IGOIImOwkEZntPfykbwmA7I7?usp=sharing):
+•	2026 Assessment of the Sablefish Stock in Alaska: 2026 Center for Independent Experts (CIE) Review Document (here)
+•	Appendix 3A. The Spatial Population over Regional Components (SPoRC) Model: Technical Description of the Assessment Model for Sablefish (here)
+•	Appendix 3B. Model Building and Bridging Exercise for the Sablefish Single Region Models (Bridging from Model 25.12 to 26.1_1Reg) (here)
+•	Appendix 3C. Development of a Fleets-as-Areas (FAA) Stock Assessment Model for Alaska Sablefish (Model 26.2_FAA) (here)
+•	Appendix 3D. Results of Spatial Stock Assessment Models for Alaska Sablefish (here)
+•	Appendix 3E. Evaluating Alternative Assessment Structures for Alaska Sablefish Under Survey Design Changes via Closed-Loop Simulation (here)
 
+
+Tasks for Reviewers
+
+As a reminder, the overarching goals of this review process are to: 
+1.	Ensure the FAA stock assessment supports the development of robust advice for use by the North Pacific Fishery Management Council based on the BSIA;
+2.	Provide an independent external review of this stock assessment to confirm that it meets the mandates of the Magnuson-Stevens Fisheries Conservation and Management Act (MSA) and other legal requirements;
+3.	Understand and identify appropriate FAA model structure and fits to key data sources (indices, landings, and age compositions);
+4.	Identify research needed to improve the assessment and advice for fishery managers.
