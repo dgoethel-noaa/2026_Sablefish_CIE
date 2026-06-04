@@ -7,3 +7,7 @@ Model 26.1_1Reg is the final single region, panmictic assessment model that uses
 Model 26.2_FAA is the final fleets-as-areas (FAA) model, which disaggregates the NOAA Longline Survey into regional fleets (Bering Sea, Aleutian Islands, Gulf of Alaska) and fits regional indices and age compositions without any extrapolation.
                                                                                                           
 Model 26.3_5Reg is the final spatially explicit model, which models 5 management regions in Alaska (BS, AI, WG, CG, EG) and integrates mark-recapture tagging data to estimate movement.
+
+Comparison plots across main model runs are also provided in subfolders here:
+* The 'Comparison Figures' folder contains code for running comparison graphics as well as associated outputs for a number of different model comparisons.
+* The 'Final_Comparison_26.1_26.2' folder contains figures comparing the two final models (26.1_1Reg and 26.2_FAA).
