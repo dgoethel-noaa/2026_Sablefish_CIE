@@ -1,7 +1,13 @@
 This folder contains all pertinent model runs and comparison graphics as used for the CIE review and described in the varios CIE documents.
 
-1Reg_Mods contains the final single region models, including the results of both the single change (1-off) and stepwise model building from Model 25.12_1Reg_Cont to Model 26.1_1Reg.
+The final SAFE assessment models are provided in the '_Final_Mods' folder.
 
-FAA_Mods contains the final Fleets-as-Areas (FAA) models, including Model 26.2_FAA.
+The other folders contain the various models developed as part of the model building excercises or that were presented as sensitivity runs. 
 
-Spat_Mods contains the final spatial models, including Model 26.3_5reg_Spat and Model 26.3a_3Reg_Spat.
+The '1Reg_Mods' folder contains the single region models, including the results of both the single change (1-off) and stepwise model building from Model 25.12_1Reg_Cont to Model 26.1_1Reg.
+
+The 'FAA_Mods' folder contains the Fleets-as-Areas (FAA) models, including Model 26.2_FAA.
+
+The 'Spat_Mods' folder contains the final spatial models, including Model 26.3_5reg_Spat and Model 26.3a_3Reg_Spat.
+
+
