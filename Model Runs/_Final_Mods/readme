@@ -1,0 +1,9 @@
+This folder contains the final models as described in the CIE SAFE document.
+
+Model 25.12_1Reg_Cont is the final continuity model from 2025, updated with data through the end of 2025 (matching the data available for the remaining 2026 models).
+
+Model 26.1_1Reg is the final single region, panmictic assessment model that uses the 'carryover' extrapolation method for the NOAA Lonline Survey index.
+                                                                                                          
+Model 26.2_FAA is the final fleets-as-areas (FAA) model, which disaggregates the NOAA Longline Survey into regional fleets (Bering Sea, Aleutian Islands, Gulf of Alaska) and fits regional indices and age compositions without any extrapolation.
+                                                                                                          
+Model 26.3_5Reg is the final spatially explicit model, which models 5 management regions in Alaska (BS, AI, WG, CG, EG) and integrates mark-recapture tagging data to estimate movement.
