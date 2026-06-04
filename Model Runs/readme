@@ -11,5 +11,5 @@ The 'FAA_Mods' folder contains the Fleets-as-Areas (FAA) models, including Model
 The 'Spat_Mods' folder contains the final spatial models, including Model 26.3_5reg_Spat and Model 26.3a_3Reg_Spat.
 
 Within each model run folder, the following files are provided:
--model_name.R -- this is the main r file for setting up and running the sablefish assessment in SPoRC, which includes code for setting up the model, running the model, outputting figures, doing residual analysis (OSA and Pearson), and running diagnostics (jitters, retrospectives, profile likelihoods).
+- model_name.R -- this is the main r file for setting up and running the sablefish assessment in SPoRC, which includes code for setting up the model, running the model, outputting figures, doing residual analysis (OSA and Pearson), and running diagnostics (jitters, retrospectives, profile likelihoods).
 -
