@@ -10,6 +10,8 @@ The 'FAA_Mods' folder contains the Fleets-as-Areas (FAA) models, including Model
 
 The 'Spat_Mods' folder contains the final spatial models, including Model 26.3_5reg_Spat and Model 26.3a_3Reg_Spat.
 
+MSE results are available from https://github.com/chengmatt/sablefish_cie_sims_2026.
+
 Each model run folder contains the following sub-folders:
 * plots -- all output plots including fits to data, time series values, diagnostics, and pdfs containing similar figures.
 * Mod_Comp -- code to make graphics comparisons across models, including output figured and pdfs from running the code. 
