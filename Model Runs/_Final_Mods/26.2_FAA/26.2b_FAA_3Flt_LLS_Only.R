@@ -3538,7 +3538,7 @@ proj_inputs <- list(
        fmort_opt = 'HCR'
   ),
   # Scenario 3 - Using 1/2 of max F
-  list(f_ref_pt = array(max(rowSums(sabie_rtmb_model$rep$Fmort[1,,])) * 0.5, dim = c(n_regions, n_proj_yrs)),
+  list(f_ref_pt = array(f40 * 0.5, dim = c(n_regions, n_proj_yrs)),
        b_ref_pt = NULL,
        fmort_opt = 'Input'
   ),
